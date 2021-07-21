@@ -7,8 +7,6 @@ module Hasura.Backends.Postgres.Translate.Insert
 
 import           Hasura.Prelude
 
-import           Instances.TH.Lift                            ()
-
 import qualified Hasura.Backends.Postgres.SQL.DML             as S
 
 import           Hasura.Backends.Postgres.SQL.Types
@@ -18,7 +16,10 @@ import           Hasura.RQL.IR.Insert
 import           Hasura.RQL.Types
 
 
-mkInsertCTE :: InsertQueryP1 'Postgres -> S.CTE
+mkInsertCTE
+  :: Backend ('Postgres pgKind)
+  => InsertQueryP1 ('Postgres pgKind)
+  -> S.CTE
 mkInsertCTE (InsertQueryP1 tn cols vals conflict (insCheck, updCheck) _ _) =
     S.CTEInsert insert
   where
@@ -35,7 +36,11 @@ mkInsertCTE (InsertQueryP1 tn cols vals conflict (insCheck, updCheck) _ _) =
     toSQLBool = toSQLBoolExp $ S.QualTable tn
 
 
-toSQLConflict :: QualifiedTable -> ConflictClauseP1 'Postgres S.SQLExp -> S.SQLConflict
+toSQLConflict
+  :: Backend ('Postgres pgKind)
+  => QualifiedTable
+  -> ConflictClauseP1 ('Postgres pgKind) S.SQLExp
+  -> S.SQLConflict
 toSQLConflict tableName = \case
   CP1DoNothing ct -> S.DoNothing $ toSQLCT <$> ct
   CP1Update ct inpCols preSet filtr -> S.Update
@@ -75,7 +80,7 @@ insertCheckConstraint boolExp =
 -- the @xmax@ system column.
 insertOrUpdateCheckExpr
   :: QualifiedTable
-  -> Maybe (ConflictClauseP1 'Postgres S.SQLExp)
+  -> Maybe (ConflictClauseP1 ('Postgres pgKind) S.SQLExp)
   -> S.BoolExp
   -> Maybe S.BoolExp
   -> S.Extractor
